@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "超星助手",
+  "version": "1.0.0",
+  "description": "超星学习通任务点辅助工具",
+  "permissions": ["activeTab", "scripting", "downloads", "storage"],
+  "host_permissions": [
+    "*://*.chaoxing.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*.chaoxing.com/*"],
+      "js": ["content/inject-scripts.js", "content/inject-loader.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "超星助手"
+  },
+  "icons": {}
+}
