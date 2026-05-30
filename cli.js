@@ -80,7 +80,7 @@ program
 program
   .command("auto")
   .description("注入自动完成运行器到页面（独立运行，CLI 可退出）")
-  .option("-s, --speed <speed>", "倍速 (auto/1/1.25/1.5/2)", "auto")
+  .option("-s, --speed <speed>", "倍速 (1/1.25/1.5/2)", "2")
   .action(async (opts) => {
     const ok = await healthCheck();
     if (!ok) {

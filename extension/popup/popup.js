@@ -61,8 +61,8 @@ async function showInPageBox(text, isError) {
 
 function buildRunnerCode() {
   const sel = document.getElementById("speed-select");
-  const speed = sel ? sel.value : "auto";
-  const completeVideo = SCRIPTS.COMPLETE_VIDEO.template.replace("${rate}", speed === "auto" ? "2" : speed);
+  const speed = sel && sel.value ? sel.value : "1";
+  const completeVideo = SCRIPTS.COMPLETE_VIDEO.template.replace("${rate}", speed);
   return SCRIPTS.TASK_RUNNER_TEMPLATE
     .replace("___DISCOVER___", JSON.stringify(SCRIPTS.DISCOVER_SCRIPT))
     .replace("___COMPLETE_DOC___", JSON.stringify(SCRIPTS.COMPLETE_DOCUMENT))
@@ -212,6 +212,52 @@ async function watchProgress() {
   }
   await showInPageBox(lines.join("\n"));
 }
+
+// ========== 倍速检测（页面加载时自动探测） ==========
+
+(async function initSpeedSelector() {
+  const sel = document.getElementById("speed-select");
+  if (!sel) return;
+
+  try {
+    const raw = await runInPage(SCRIPTS.DISCOVER_SCRIPT);
+    const data = typeof raw === "string" ? JSON.parse(raw) : raw;
+    const videos = (data && data.taskPoints || []).filter(function(t) { return t.type === "video" && !t.isFinished; });
+
+    // 找出所有未完成视频中支持倍速的，取最大倍速
+    var maxSpeed = 1;
+    if (videos.length > 0) {
+      var allDouble = true;
+      for (var i = 0; i < videos.length; i++) {
+        if (!videos[i].canDoubleSpeed) { allDouble = false; break; }
+      }
+      if (allDouble) maxSpeed = 2;
+    }
+
+    sel.innerHTML = "";
+    var opt1 = document.createElement("option");
+    opt1.value = "1";
+    opt1.textContent = "1x";
+    sel.appendChild(opt1);
+
+    if (maxSpeed > 1) {
+      var opt2 = document.createElement("option");
+      opt2.value = String(maxSpeed);
+      opt2.textContent = maxSpeed + "x";
+      opt2.selected = true;
+      sel.appendChild(opt2);
+    }
+  } catch (e) {
+    // 探测失败，提供默认选项
+    sel.innerHTML = "";
+    var o1 = document.createElement("option");
+    o1.value = "1"; o1.textContent = "1x";
+    sel.appendChild(o1);
+    var o2 = document.createElement("option");
+    o2.value = "2"; o2.textContent = "2x"; o2.selected = true;
+    sel.appendChild(o2);
+  }
+})();
 
 // ========== 按钮绑定 ==========
 
