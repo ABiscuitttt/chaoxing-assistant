@@ -20,7 +20,6 @@ export const TASK_RUNNER_TEMPLATE = `
   var GET_STATE = ___GET_STATE___;
 
   var POLL_INTERVAL = 500;
-  var THRESHOLD = 90;
 
   // ========== UI ==========
   var box = document.createElement("div");
@@ -142,8 +141,9 @@ export const TASK_RUNNER_TEMPLATE = `
             await sleep(2000);
 
             var startTime = Date.now();
-            var maxWait = Math.max(v.videoDuration * 1000 * 1.3, 120000);
+            var maxWait = Math.max(v.videoDuration * 1000 * 1.5, 180000);
 
+            // 阶段 1: 等视频播完
             await new Promise(function(resolvePoll) {
               self._timerId = setInterval(function() {
                 try {
@@ -154,8 +154,6 @@ export const TASK_RUNNER_TEMPLATE = `
 
                   if (state.error) {
                     clearInterval(self._timerId); self._timerId = null;
-                    completed++;
-                    progress("视频 " + (vi + 1) + "/" + videos.length + " 跳过", state.error);
                     resolvePoll();
                     return;
                   }
@@ -172,18 +170,15 @@ export const TASK_RUNNER_TEMPLATE = `
                     pct
                   );
 
-                  if (pct >= THRESHOLD) {
+                  // 视频播放结束（ended 或 100%）
+                  if (state.ended || pct >= 100) {
                     clearInterval(self._timerId); self._timerId = null;
-                    completed++;
-                    progress("视频 " + (vi + 1) + "/" + videos.length + " 完成", pct + "%");
                     resolvePoll();
                     return;
                   }
 
                   if (elapsed * 1000 > maxWait) {
                     clearInterval(self._timerId); self._timerId = null;
-                    completed++;
-                    progress("视频 " + (vi + 1) + "/" + videos.length + " 超时跳过", pct + "%");
                     resolvePoll();
                     return;
                   }
@@ -191,7 +186,37 @@ export const TASK_RUNNER_TEMPLATE = `
               }, POLL_INTERVAL);
             });
 
-            await sleep(1000);
+            // 阶段 2: 等平台确认任务点完成
+            if (!self.aborted) {
+              var verifyStart = Date.now();
+              var verifyTimeout = 30000; // 最多等 30 秒
+              var jobid = v.jobid;
+
+              while (true) {
+                if (self.aborted) break;
+                progress("视频 " + (vi + 1) + "/" + videos.length + " 等待确认", "验证任务点状态...");
+
+                try {
+                  var vrfRaw = eval(DISCOVER);
+                  var vrfData = typeof vrfRaw === "string" ? JSON.parse(vrfRaw) : vrfRaw;
+                  var tp = vrfData.taskPoints ? vrfData.taskPoints.find(function(t) { return t.jobid === jobid; }) : null;
+
+                  if (tp && tp.isFinished) {
+                    completed++;
+                    progress("视频 " + (vi + 1) + "/" + videos.length + " 已确认完成", "");
+                    break;
+                  }
+                } catch(e) {}
+
+                if (Date.now() - verifyStart > verifyTimeout) {
+                  completed++;
+                  progress("视频 " + (vi + 1) + "/" + videos.length + " 确认超时，跳过", "");
+                  break;
+                }
+
+                await sleep(1500);
+              }
+            }
           }
         }
 
