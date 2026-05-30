@@ -60,12 +60,15 @@ async function showInPageBox(text, isError) {
 // ========== 构建 Runner 脚本 ==========
 
 function buildRunnerCode() {
-  const completeVideo = SCRIPTS.COMPLETE_VIDEO.template.replace("${rate}", "2");
+  const sel = document.getElementById("speed-select");
+  const speed = sel ? sel.value : "auto";
+  const completeVideo = SCRIPTS.COMPLETE_VIDEO.template.replace("${rate}", speed === "auto" ? "2" : speed);
   return SCRIPTS.TASK_RUNNER_TEMPLATE
     .replace("___DISCOVER___", JSON.stringify(SCRIPTS.DISCOVER_SCRIPT))
     .replace("___COMPLETE_DOC___", JSON.stringify(SCRIPTS.COMPLETE_DOCUMENT))
     .replace("___COMPLETE_VIDEO___", JSON.stringify(completeVideo))
-    .replace("___GET_STATE___", JSON.stringify(SCRIPTS.GET_STATE));
+    .replace("___GET_STATE___", JSON.stringify(SCRIPTS.GET_STATE))
+    .replace("___SPEED___", JSON.stringify(speed));
 }
 
 // ========== 操作函数 ==========

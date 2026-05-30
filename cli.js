@@ -80,7 +80,8 @@ program
 program
   .command("auto")
   .description("注入自动完成运行器到页面（独立运行，CLI 可退出）")
-  .action(async () => {
+  .option("-s, --speed <speed>", "倍速 (auto/1/1.25/1.5/2)", "auto")
+  .action(async (opts) => {
     const ok = await healthCheck();
     if (!ok) {
       console.error("❌ WebBridge daemon 未连接，请确认浏览器扩展已运行");
@@ -92,6 +93,7 @@ program
       completeDoc: COMPLETE_DOCUMENT,
       completeVideo: COMPLETE_VIDEO(2),
       getState: GET_STATE,
+      speed: opts.speed,
     });
     const result = await evaluate(code);
     console.log("✅ 运行器已注入，查看页面左上角面板");

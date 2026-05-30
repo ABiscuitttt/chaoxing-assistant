@@ -21,7 +21,16 @@
   <h2>超星助手</h2>
   <div class="subtitle">页面左上角显示进度 · 弹窗可关闭</div>
 
-  <button class="btn btn-success" id="btn-auto">🚀 启动自动完成（注入页面运行）</button>
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+    <button class="btn btn-success" id="btn-auto" style="flex:1;margin-bottom:0;">🚀 启动自动完成</button>
+    <select id="speed-select" style="padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px;background:#fff;">
+      <option value="auto">自动</option>
+      <option value="1">1x</option>
+      <option value="1.25">1.25x</option>
+      <option value="1.5">1.5x</option>
+      <option value="2">2x</option>
+    </select>
+  </div>
 
   <div class="btn-row">
     <button class="btn btn-secondary" id="btn-runner-status">📊 查看进度</button>

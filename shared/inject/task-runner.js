@@ -18,6 +18,7 @@ export const TASK_RUNNER_TEMPLATE = `
   var COMPLETE_DOC = ___COMPLETE_DOC___;
   var COMPLETE_VIDEO = ___COMPLETE_VIDEO___;
   var GET_STATE = ___GET_STATE___;
+  var SPEED_MODE = ___SPEED___;
 
   var POLL_INTERVAL = 500;
 
@@ -96,6 +97,23 @@ export const TASK_RUNNER_TEMPLATE = `
           this.status = "done";
           return;
         }
+
+        // ---- 自动检测倍速 ----
+        var useSpeed = 1;
+        if (SPEED_MODE === "auto") {
+          var allCanDouble = true;
+          for (var si = 0; si < pending.length; si++) {
+            if (pending[si].type === "video" && !pending[si].canDoubleSpeed) {
+              allCanDouble = false;
+              break;
+            }
+          }
+          useSpeed = allCanDouble ? 2 : 1;
+        } else {
+          useSpeed = parseFloat(SPEED_MODE) || 1;
+        }
+        // 用检测到的倍速重建视频脚本
+        COMPLETE_VIDEO = COMPLETE_VIDEO.replace(/playbackRate=\d+(\.\d+)?/, "playbackRate=" + useSpeed);
 
         var docs = pending.filter(function(t) { return t.type === "document"; });
         var videos = pending.filter(function(t) { return t.type === "video"; });
@@ -289,11 +307,13 @@ export const TASK_RUNNER_TEMPLATE = `
 })();
 `;
 
-export function buildRunner({ discover, completeDoc, completeVideo, getState }) {
-  const videoCode = completeVideo.replace("${rate}", "2");
+export function buildRunner({ discover, completeDoc, completeVideo, getState, speed }) {
+  const spd = speed || "auto";
+  const videoCode = completeVideo.replace("${rate}", spd === "auto" ? "2" : spd);
   return TASK_RUNNER_TEMPLATE
     .replace("___DISCOVER___", JSON.stringify(discover))
     .replace("___COMPLETE_DOC___", JSON.stringify(completeDoc))
     .replace("___COMPLETE_VIDEO___", JSON.stringify(videoCode))
-    .replace("___GET_STATE___", JSON.stringify(getState));
+    .replace("___GET_STATE___", JSON.stringify(getState))
+    .replace("___SPEED___", JSON.stringify(spd));
 }
