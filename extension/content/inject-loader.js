@@ -1,44 +1,54 @@
 /**
  * extension/content/inject-loader.js
- *
- * Content Script — 在超星页面自动加载
- *
- * 职责:
- *   1. 从 inject-scripts.js 读取预构建的注入脚本
- *   2. 监听 popup 消息，执行对应操作
- *   3. 返回结果给 popup
- *
- * 构建: 运行 node scripts/build-extension.js 生成 inject-scripts.js
+ * Content Script — 页面加载时创建白框，提供注入工具和消息处理。
  */
 
-// ========== 加载提示 ==========
-(function() {
-  var tip = document.createElement("div");
-  tip.textContent = "超星助手已加载";
-  tip.style.cssText = "position:fixed;top:10px;left:10px;z-index:99998;background:#1a73e8;color:#fff;padding:4px 10px;border-radius:4px;font-size:12px;font-family:system-ui;opacity:0;transition:opacity 0.3s;pointer-events:none;";
-  document.body.appendChild(tip);
-  requestAnimationFrame(function() { tip.style.opacity = "1"; });
-  setTimeout(function() { tip.style.opacity = "0"; setTimeout(function() { tip.remove(); }, 300); }, 2000);
-})();
-
-// ========== 注入工具 ==========
+// ========== 页面加载：注入白框到 MAIN world ==========
 
 function injectRaw(code) {
   const script = document.createElement("script");
-  script.textContent = `(${code})();`;
+  script.textContent = "(" + code + ")();";
   (document.head || document.documentElement).appendChild(script);
   script.remove();
 }
+
+// 注入白框初始化脚本到页面 MAIN world
+injectRaw(function() {
+  if (document.getElementById("__cx_runner_box")) return;
+  var box = document.createElement("div");
+  box.id = "__cx_runner_box";
+  box.innerHTML =
+    '<div style="font-weight:bold;margin-bottom:3px;color:#1a73e8;font-size:12px;">超星助手</div>' +
+    '<div id="__cx_runner_head" style="font-size:11px;color:#999;">点击插件按钮开始</div>' +
+    '<div id="__cx_runner_detail" style="font-size:11px;color:#666;margin-top:1px;"></div>' +
+    '<div id="__cx_runner_bar" style="margin-top:3px;height:3px;background:#e0e0e0;overflow:hidden;display:none;">' +
+      '<div id="__cx_runner_fill" style="height:100%;width:0%;background:#1a73e8;transition:width 0.3s;"></div>' +
+    '</div>';
+  box.style.cssText = "position:fixed;top:10px;left:10px;z-index:99999;width:300px;background:#fff;padding:8px 12px;font-family:system-ui,sans-serif;font-size:12px;box-shadow:0 4px 16px rgba(0,0,0,0.15);";
+  document.body.appendChild(box);
+
+  // 通用显示函数
+  window.__CX_SHOW = function(html, isError) {
+    var h = document.getElementById("__cx_runner_head");
+    if (h) h.innerHTML = '<span style="color:' + (isError ? "#d93025" : "#333") + '">' + html + '</span>';
+    var d = document.getElementById("__cx_runner_detail");
+    if (d) d.textContent = "";
+    var b = document.getElementById("__cx_runner_bar");
+    if (b) b.style.display = "none";
+  };
+});
+
+// ========== 注入工具 ==========
 
 function injectAndGet(code) {
   return new Promise((resolve) => {
     const id = "__cx_" + Math.random().toString(36).slice(2);
     const wrapped = `
 (function(){
-  var result = (${code})();
+  var result = eval(${JSON.stringify(code)});
   var el = document.createElement("div");
   el.id = "${id}";
-  el.textContent = result;
+  el.textContent = typeof result === "string" ? result : JSON.stringify(result);
   el.style.display = "none";
   document.body.appendChild(el);
 })();
@@ -50,27 +60,14 @@ function injectAndGet(code) {
 
     const check = setInterval(() => {
       const el = document.getElementById(id);
-      if (el) {
-        clearInterval(check);
-        const r = el.textContent;
-        el.remove();
-        resolve(r);
-      }
+      if (el) { clearInterval(check); const r = el.textContent; el.remove(); resolve(r); }
     }, 50);
-
-    setTimeout(() => {
-      clearInterval(check);
-      resolve(JSON.stringify({ error: "timeout" }));
-    }, 15000);
+    setTimeout(() => { clearInterval(check); resolve(JSON.stringify({ error: "timeout" })); }, 15000);
   });
 }
 
 function resolveTemplate(tmpl, params) {
-  // 将 ${param} 替换为实际值
-  return tmpl.replace(/\$\{(\w+)\}/g, (_, k) => {
-    const v = params[k];
-    return v !== undefined ? v : "";
-  });
+  return tmpl.replace(/\$\{(\w+)\}/g, (_, k) => params[k] !== undefined ? params[k] : "");
 }
 
 // ========== 消息处理 ==========
@@ -78,66 +75,34 @@ function resolveTemplate(tmpl, params) {
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   const { action, args } = msg;
   const S = window.__CX_INJECT;
-
-  if (!S) {
-    sendResponse({ error: "inject-scripts.js not loaded" });
-    return;
-  }
+  if (!S) { sendResponse({ error: "scripts not loaded" }); return; }
 
   try {
     switch (action) {
       case "discover":
         injectAndGet(S.DISCOVER_SCRIPT).then((r) => sendResponse(JSON.parse(r)));
         return true;
-
       case "chapters":
         injectAndGet(S.CHAPTERS_SCRIPT).then((r) => sendResponse(JSON.parse(r)));
         return true;
-
       case "getDownloadUrl":
         injectAndGet(S.GET_DOWNLOAD_URL).then((r) => sendResponse(JSON.parse(r)));
         return true;
-
       case "completeDocument":
         injectAndGet(S.COMPLETE_DOCUMENT).then((r) => sendResponse({ result: r }));
         return true;
-
-      case "completeVideo": {
-        const speed = args?.speed || 2;
-        const code = resolveTemplate(S.COMPLETE_VIDEO.template, { speed });
-        injectAndGet(code).then((r) => sendResponse({ result: r }));
+      case "completeVideo":
+        injectAndGet(resolveTemplate(S.COMPLETE_VIDEO.template, { speed: args?.speed || 2 })).then((r) => sendResponse({ result: r }));
         return true;
-      }
-
-      case "goto": {
-        const nodeId = args?.nodeId;
-        if (!nodeId) { sendResponse({ error: "nodeId required" }); return; }
-        const code = resolveTemplate(S.GOTO_CHAPTER.template, { nodeId });
-        injectAndGet(code).then((r) => sendResponse({ result: r }));
+      case "goto":
+        if (!args?.nodeId) { sendResponse({ error: "nodeId required" }); return; }
+        injectAndGet(resolveTemplate(S.GOTO_CHAPTER.template, { nodeId: args.nodeId })).then((r) => sendResponse({ result: r }));
         return true;
-      }
-
-      case "play":
-        injectAndGet(S.PLAY).then((r) => sendResponse({ result: r }));
-        return true;
-
-      case "pause":
-        injectAndGet(S.PAUSE).then((r) => sendResponse({ result: r }));
-        return true;
-
       case "getState":
         injectAndGet(S.GET_STATE).then((r) => sendResponse(JSON.parse(r)));
         return true;
-
-      case "setSpeed": {
-        const rate = args?.rate || 2;
-        const code = resolveTemplate(S.SET_SPEED.template, { rate });
-        injectAndGet(code).then((r) => sendResponse({ result: r }));
-        return true;
-      }
-
       default:
-        sendResponse({ error: `unknown action: ${action}` });
+        sendResponse({ error: "unknown action: " + action });
     }
   } catch (e) {
     sendResponse({ error: e.message });
