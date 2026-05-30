@@ -15,11 +15,8 @@ async function runInPage(code) {
   return results[0].result;
 }
 
-// 确保页面有白框和 __CX_SHOW
-const INIT_BOX = `(function(){var b=document.getElementById("__cx_runner_box");if(!b){b=document.createElement("div");b.id="__cx_runner_box";b.style.cssText="position:fixed;top:10px;left:10px;z-index:99999;width:300px;background:#fff;padding:8px 12px;font-family:system-ui,sans-serif;font-size:12px;box-shadow:0 4px 16px rgba(0,0,0,.15)";document.body.appendChild(b)}b.innerHTML='<div style=font-weight:bold;margin-bottom:3px;color:#1a73e8;font-size:12px>超星助手</div><div id=__cx_runner_head style=font-size:11px;color:#999>点击插件按钮开始</div><div id=__cx_runner_detail style=font-size:11px;color:#666;margin-top:1px></div><div id=__cx_runner_bar style=margin-top:3px;height:3px;background:#e0e0e0;overflow:hidden;display:none><div id=__cx_runner_fill style=height:100%;width:0%;background:#1a73e8;transition:width .3s></div></div>';window.__CX_SHOW=function(h,e){var hd=document.getElementById("__cx_runner_head");if(hd)hd.innerHTML='<span style=color:'+(e?'#d93025':'#333')+'>'+h+'</span>';var d=document.getElementById("__cx_runner_detail");if(d)d.textContent='';var bar=document.getElementById("__cx_runner_bar");if(bar)bar.style.display='none'}})()`;
-
-// popup打开时自动确保白框存在
-runInPage(INIT_BOX);
+// popup打开时确保白框存在（仅在不存在时创建，不覆盖已有内容）
+runInPage(`(function(){if(document.getElementById("__cx_runner_box"))return;var b=document.createElement("div");b.id="__cx_runner_box";b.style.cssText="position:fixed;top:10px;left:10px;z-index:99999;width:300px;background:#fff;padding:8px 12px;font-family:system-ui,sans-serif;font-size:12px;box-shadow:0 4px 16px rgba(0,0,0,.15)";b.innerHTML='<div style=font-weight:bold;color:#1a73e8;font-size:12px>超星助手</div><div id=__cx_runner_head style=font-size:11px;color:#999></div><div id=__cx_runner_detail style=font-size:11px;color:#666;margin-top:1px></div><div id=__cx_runner_bar style=margin-top:3px;height:3px;background:#e0e0e0;overflow:hidden;display:none><div id=__cx_runner_fill style=height:100%;width:0%;background:#1a73e8;transition:width .3s></div></div>';document.body.appendChild(b)})()`);
 
 function getSpeed() {
   var sel = document.getElementById("speed-select");

@@ -5,7 +5,7 @@ import { discover } from "./lib/commands/discover.js";
 import { chapters } from "./lib/commands/chapters.js";
 import { complete } from "./lib/commands/complete.js";
 import { download } from "./lib/commands/download.js";
-import { healthCheck, evaluate } from "./lib/bridge.js";
+import { requireHealth, evaluate } from "./lib/bridge.js";
 import { buildRunner } from "./shared/inject/task-runner.js";
 import { DISCOVER_SCRIPT } from "./shared/inject/discover.js";
 import { COMPLETE_DOCUMENT, COMPLETE_VIDEO } from "./shared/inject/task-complete.js";
@@ -83,11 +83,7 @@ program
   .description("注入自动完成运行器到页面（独立运行，CLI 可退出）")
   .option("--fast", "自动使用视频支持的最大倍速")
   .action(async (opts) => {
-    const ok = await healthCheck();
-    if (!ok) {
-      console.error("❌ WebBridge daemon 未连接，请确认浏览器扩展已运行");
-      process.exit(1);
-    }
+    await requireHealth();
     console.log("🚀 注入自动完成运行器...");
     const code = buildRunner({
       discover: DISCOVER_SCRIPT,
