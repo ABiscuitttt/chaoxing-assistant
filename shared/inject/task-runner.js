@@ -153,6 +153,7 @@ export const TASK_RUNNER_TEMPLATE = `
           // 阶段 1: 等视频播完
           var startTime = Date.now();
           var maxWait = Math.max(v.videoDuration * 1000 * 1.5, 180000);
+          var pollCount = 0;
 
           while (true) {
             if (this.aborted) { this.running = false; return; }
@@ -172,6 +173,14 @@ export const TASK_RUNNER_TEMPLATE = `
 
             if (state.ended || pct >= 100) break;
             if (Date.now() - startTime > maxWait) { progress("视频 " + (vi + 1) + "/" + videos.length + " 超时跳过", ""); break; }
+
+            // 每 3 秒检查一次任务点是否已被平台标记完成
+            pollCount++;
+            if (pollCount % 6 === 0) {
+              var checkData = parseResult(eval(DISCOVER));
+              var checkTp = checkData.taskPoints ? checkData.taskPoints.find(function(t) { return t.jobid === v.jobid; }) : null;
+              if (checkTp && checkTp.isFinished) { progress("视频 " + (vi + 1) + "/" + videos.length + " 已标记完成", ""); break; }
+            }
 
             await sleep(POLL_MS);
           }
