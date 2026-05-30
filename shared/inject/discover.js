@@ -90,7 +90,7 @@ export const DISCOVER_SCRIPT = `
         index: i,
         type: att.type || "unknown",
         jobid: att.jobid || "",
-        isFinished: att.job === false,
+        isFinished: att.isPassed === true,
         title: (att.property && att.property.title) || "",
         filename: (att.property && att.property.name) || "",
         module: module,
