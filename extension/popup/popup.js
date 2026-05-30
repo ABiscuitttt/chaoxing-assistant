@@ -213,47 +213,18 @@ async function watchProgress() {
   await showInPageBox(lines.join("\n"));
 }
 
-// ========== 倍速检测（页面加载时自动探测） ==========
+// ========== 倍速选项（固定两项：默认 / 倍速） ==========
 
-(async function initSpeedSelector() {
-  const sel = document.getElementById("speed-select");
+(function initSpeedSelector() {
+  var sel = document.getElementById("speed-select");
   if (!sel) return;
-
-  try {
-    const raw = await runInPage(SCRIPTS.DISCOVER_SCRIPT);
-    const data = typeof raw === "string" ? JSON.parse(raw) : raw;
-    const videos = (data && data.taskPoints || []).filter(function(t) { return t.type === "video" && !t.isFinished; });
-
-    // 找出所有未完成视频中支持倍速的，取最大倍速
-    var maxSpeed = 1;
-    if (videos.length > 0) {
-      var allDouble = true;
-      for (var i = 0; i < videos.length; i++) {
-        if (!videos[i].canDoubleSpeed) { allDouble = false; break; }
-      }
-      if (allDouble) maxSpeed = 2;
-    }
-
-    sel.innerHTML = "";
-    var opt1 = document.createElement("option");
-    opt1.value = "1";
-    opt1.textContent = "1x";
-    opt1.selected = true;
-    sel.appendChild(opt1);
-
-    if (maxSpeed > 1) {
-      var opt2 = document.createElement("option");
-      opt2.value = String(maxSpeed);
-      opt2.textContent = maxSpeed + "x";
-      sel.appendChild(opt2);
-    }
-  } catch (e) {
-    // 探测失败，只显示 1x
-    sel.innerHTML = "";
-    var o1 = document.createElement("option");
-    o1.value = "1"; o1.textContent = "1x"; o1.selected = true;
-    sel.appendChild(o1);
-  }
+  sel.innerHTML = "";
+  var d = document.createElement("option");
+  d.value = "1"; d.textContent = "默认"; d.selected = true;
+  sel.appendChild(d);
+  var f = document.createElement("option");
+  f.value = "auto"; f.textContent = "倍速";
+  sel.appendChild(f);
 })();
 
 // ========== 按钮绑定 ==========

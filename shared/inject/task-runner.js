@@ -98,21 +98,8 @@ export const TASK_RUNNER_TEMPLATE = `
           return;
         }
 
-        // ---- 确定倍速 ----
-        var useSpeed = 1;
-        if (SPEED_MODE === "auto") {
-          var allCanDouble = true;
-          for (var si = 0; si < pending.length; si++) {
-            if (pending[si].type === "video" && !pending[si].canDoubleSpeed) {
-              allCanDouble = false;
-              break;
-            }
-          }
-          useSpeed = allCanDouble ? 2 : 1;
-        } else {
-          useSpeed = parseFloat(SPEED_MODE) || 1;
-        }
-        COMPLETE_VIDEO = COMPLETE_VIDEO.replace(/playbackRate=\d+(\.\d+)?/, "playbackRate=" + useSpeed);
+        // ---- 倍速模式 ----
+        var fixedSpeed = SPEED_MODE === "auto" ? 0 : (parseFloat(SPEED_MODE) || 1);
 
         var docs = pending.filter(function(t) { return t.type === "document"; });
         var videos = pending.filter(function(t) { return t.type === "video"; });
@@ -152,9 +139,13 @@ export const TASK_RUNNER_TEMPLATE = `
             self.status = "video";
             self.progress.current = { index: vi, total: videos.length, title: v.title || v.filename, pct: 0 };
 
-            progress("视频 " + (vi + 1) + "/" + videos.length, (v.title || v.filename) + " (" + v.videoDuration + "s)");
+            // 倍速模式：每个视频用各自最大倍速；固定模式：统一倍速
+            var vSpeed = fixedSpeed || (v.canDoubleSpeed ? 2 : 1);
+            var vScript = COMPLETE_VIDEO.replace(/playbackRate=\d+(\.\d+)?/, "playbackRate=" + vSpeed);
 
-            try { eval(COMPLETE_VIDEO); } catch(e) {}
+            progress("视频 " + (vi + 1) + "/" + videos.length + "  " + vSpeed + "x", (v.title || v.filename) + " (" + v.videoDuration + "s)");
+
+            try { eval(vScript); } catch(e) {}
             await sleep(2000);
 
             var startTime = Date.now();
