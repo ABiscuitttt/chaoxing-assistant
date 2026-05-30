@@ -13,30 +13,17 @@ function injectRaw(code) {
 }
 
 // 注入白框初始化脚本到页面 MAIN world
-injectRaw(function() {
-  if (document.getElementById("__cx_runner_box")) return;
-  var box = document.createElement("div");
-  box.id = "__cx_runner_box";
-  box.innerHTML =
-    '<div style="font-weight:bold;margin-bottom:3px;color:#1a73e8;font-size:12px;">超星助手</div>' +
-    '<div id="__cx_runner_head" style="font-size:11px;color:#999;">点击插件按钮开始</div>' +
-    '<div id="__cx_runner_detail" style="font-size:11px;color:#666;margin-top:1px;"></div>' +
-    '<div id="__cx_runner_bar" style="margin-top:3px;height:3px;background:#e0e0e0;overflow:hidden;display:none;">' +
-      '<div id="__cx_runner_fill" style="height:100%;width:0%;background:#1a73e8;transition:width 0.3s;"></div>' +
-    '</div>';
-  box.style.cssText = "position:fixed;top:10px;left:10px;z-index:99999;width:300px;background:#fff;padding:8px 12px;font-family:system-ui,sans-serif;font-size:12px;box-shadow:0 4px 16px rgba(0,0,0,0.15);";
-  document.body.appendChild(box);
-
-  // 通用显示函数
-  window.__CX_SHOW = function(html, isError) {
-    var h = document.getElementById("__cx_runner_head");
-    if (h) h.innerHTML = '<span style="color:' + (isError ? "#d93025" : "#333") + '">' + html + '</span>';
-    var d = document.getElementById("__cx_runner_detail");
-    if (d) d.textContent = "";
-    var b = document.getElementById("__cx_runner_bar");
-    if (b) b.style.display = "none";
-  };
-});
+var INIT_BOX = '\
+(function(){if(document.getElementById("__cx_runner_box"))return;\
+var b=document.createElement("div");b.id="__cx_runner_box";\
+b.innerHTML="<div style=font-weight:bold;margin-bottom:3px;color:#1a73e8;font-size:12px>超星助手</div><div id=__cx_runner_head style=font-size:11px;color:#999>点击插件按钮开始</div><div id=__cx_runner_detail style=font-size:11px;color:#666;margin-top:1px></div><div id=__cx_runner_bar style=margin-top:3px;height:3px;background:#e0e0e0;overflow:hidden;display:none><div id=__cx_runner_fill style=height:100%;width:0%;background:#1a73e8;transition:width .3s></div></div>";\
+b.style.cssText="position:fixed;top:10px;left:10px;z-index:99999;width:300px;background:#fff;padding:8px 12px;font-family:system-ui,sans-serif;font-size:12px;box-shadow:0 4px 16px rgba(0,0,0,.15)";\
+document.body.appendChild(b);\
+window.__CX_SHOW=function(h,e){var hd=document.getElementById("__cx_runner_head");if(hd)hd.innerHTML="<span style=color:"+(e?"#d93025":"#333")+">"+h+"</span>";var d=document.getElementById("__cx_runner_detail");if(d)d.textContent="";var bar=document.getElementById("__cx_runner_bar");if(bar)bar.style.display="none"};})()';
+var s = document.createElement("script");
+s.textContent = INIT_BOX;
+(document.head || document.documentElement).appendChild(s);
+s.remove();
 
 // ========== 注入工具 ==========
 
