@@ -105,7 +105,14 @@ export const TASK_RUNNER_TEMPLATE = `
         setHead("正在探测任务点...");
         setDetail("");
         var data = parseResult(eval(DISCOVER));
-        if (data.error) { setHead("错误: " + data.error); this.running = false; return; }
+        if (data.error) {
+          setHead("需手动完成");
+          setDetail(data.error);
+          setBar(0);
+          this.running = false;
+          this.status = "manual";
+          return;
+        }
 
         var pending = data.taskPoints.filter(function(t) { return !t.isFinished; });
         _total = pending.length;

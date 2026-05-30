@@ -162,7 +162,8 @@ program
           if (statusRaw === "null") break;
           const st = JSON.parse(statusRaw);
           if (!st.running) {
-            console.log(`   ✅ 完成 (${st.status})`);
+            if (st.status === "manual") console.log(`   ⚠️ 需手动完成，跳过`);
+            else console.log(`   ✅ 完成 (${st.status})`);
             break;
           }
           process.stdout.write(`   ⏳ ${st.status}...\r`);
