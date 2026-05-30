@@ -105,13 +105,14 @@ export const TASK_RUNNER_TEMPLATE = `
         var completed = 0;
         var self = this;
 
-        function progress(head, detail) {
-          var pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+        function progress(head, detail, videoPct) {
+          var frac = videoPct != null ? videoPct / 100 : 0;
+          var overall = total > 0 ? Math.round(((completed + frac) / total) * 100) : 0;
           self.progress.completed = completed;
           self.progress.total = total;
-          self.progress.overallPct = pct;
-          setBar(pct);
-          setHead("[" + completed + "/" + total + "] " + pct + "%  " + head);
+          self.progress.overallPct = overall;
+          setBar(overall);
+          setHead("[" + completed + "/" + total + "] " + overall + "%  " + head);
           setDetail(detail || "");
         }
 
@@ -167,7 +168,8 @@ export const TASK_RUNNER_TEMPLATE = `
 
                   progress(
                     "视频 " + (vi + 1) + "/" + videos.length + "  " + pct + "%",
-                    state.currentTime + "s/" + (state.duration || "?") + "s  |  " + state.playbackRate + "x  |  " + mins + ":" + (secs < 10 ? "0" : "") + secs
+                    state.currentTime + "s/" + (state.duration || "?") + "s  |  " + state.playbackRate + "x  |  " + mins + ":" + (secs < 10 ? "0" : "") + secs,
+                    pct
                   );
 
                   if (pct >= THRESHOLD) {
