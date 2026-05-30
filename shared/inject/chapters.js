@@ -28,6 +28,7 @@ export const CHAPTERS_SCRIPT = `
           title: m[2].slice(0,80),
           isLeaf: true,
           depth: 0,
+          unfinished: 0,
         });
       }
     });
@@ -54,12 +55,16 @@ export const CHAPTERS_SCRIPT = `
       var nodeId = div ? div.id.replace(/^cur/, "") : "";
 
       var hasChildren = !!li.querySelector("ul");
+      // 读取未完成任务点数
+      var orange = li.querySelector(".orangeNew");
+      var unfinished = orange ? parseInt(orange.textContent) || 0 : 0;
       var ch = {
         id: nodeId,
         number: number,
         title: title,
         isLeaf: !hasChildren,
         depth: depth,
+        unfinished: unfinished,
       };
       chapters.push(ch);
 
