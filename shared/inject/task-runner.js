@@ -98,8 +98,20 @@ export const TASK_RUNNER_TEMPLATE = `
           return;
         }
 
-        // ---- 应用倍速 ----
-        var useSpeed = parseFloat(SPEED_MODE) || 1;
+        // ---- 确定倍速 ----
+        var useSpeed = 1;
+        if (SPEED_MODE === "auto") {
+          var allCanDouble = true;
+          for (var si = 0; si < pending.length; si++) {
+            if (pending[si].type === "video" && !pending[si].canDoubleSpeed) {
+              allCanDouble = false;
+              break;
+            }
+          }
+          useSpeed = allCanDouble ? 2 : 1;
+        } else {
+          useSpeed = parseFloat(SPEED_MODE) || 1;
+        }
         COMPLETE_VIDEO = COMPLETE_VIDEO.replace(/playbackRate=\d+(\.\d+)?/, "playbackRate=" + useSpeed);
 
         var docs = pending.filter(function(t) { return t.type === "document"; });
@@ -295,8 +307,9 @@ export const TASK_RUNNER_TEMPLATE = `
 `;
 
 export function buildRunner({ discover, completeDoc, completeVideo, getState, speed }) {
-  const spd = speed || "2";
-  const videoCode = completeVideo.replace("${rate}", spd);
+  const spd = speed || "1";
+  // 初始 COMPLETE_VIDEO 用 2x（runner 会在 auto 模式下重新检测）
+  const videoCode = completeVideo.replace("${rate}", spd === "auto" ? "2" : spd);
   return TASK_RUNNER_TEMPLATE
     .replace("___DISCOVER___", JSON.stringify(discover))
     .replace("___COMPLETE_DOC___", JSON.stringify(completeDoc))

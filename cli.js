@@ -80,7 +80,7 @@ program
 program
   .command("auto")
   .description("注入自动完成运行器到页面（独立运行，CLI 可退出）")
-  .option("-s, --speed <speed>", "倍速 (1/1.25/1.5/2)", "2")
+  .option("--fast", "自动使用视频支持的最大倍速")
   .action(async (opts) => {
     const ok = await healthCheck();
     if (!ok) {
@@ -93,7 +93,7 @@ program
       completeDoc: COMPLETE_DOCUMENT,
       completeVideo: COMPLETE_VIDEO(2),
       getState: GET_STATE,
-      speed: opts.speed,
+      speed: opts.fast ? "auto" : "1",
     });
     const result = await evaluate(code);
     console.log("✅ 运行器已注入，查看页面左上角面板");

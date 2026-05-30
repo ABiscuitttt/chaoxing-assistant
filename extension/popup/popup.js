@@ -238,24 +238,21 @@ async function watchProgress() {
     var opt1 = document.createElement("option");
     opt1.value = "1";
     opt1.textContent = "1x";
+    opt1.selected = true;
     sel.appendChild(opt1);
 
     if (maxSpeed > 1) {
       var opt2 = document.createElement("option");
       opt2.value = String(maxSpeed);
       opt2.textContent = maxSpeed + "x";
-      opt2.selected = true;
       sel.appendChild(opt2);
     }
   } catch (e) {
-    // 探测失败，提供默认选项
+    // 探测失败，只显示 1x
     sel.innerHTML = "";
     var o1 = document.createElement("option");
-    o1.value = "1"; o1.textContent = "1x";
+    o1.value = "1"; o1.textContent = "1x"; o1.selected = true;
     sel.appendChild(o1);
-    var o2 = document.createElement("option");
-    o2.value = "2"; o2.textContent = "2x"; o2.selected = true;
-    sel.appendChild(o2);
   }
 })();
 
