@@ -2,3 +2,4 @@ node_modules/
 downloads/
 *.pdf
 .DS_Store
+debug-screenshot.png
