@@ -19,7 +19,7 @@ export const TASK_RUNNER_TEMPLATE = `
   var COMPLETE_VIDEO = ___COMPLETE_VIDEO___;
   var GET_STATE = ___GET_STATE___;
 
-  var POLL_INTERVAL = 3000;
+  var POLL_INTERVAL = 500;
   var THRESHOLD = 90;
 
   // ========== UI ==========
