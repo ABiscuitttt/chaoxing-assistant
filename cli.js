@@ -91,7 +91,7 @@ program
     const code = buildRunner({
       discover: DISCOVER_SCRIPT,
       completeDoc: COMPLETE_DOCUMENT,
-      completeVideo: COMPLETE_VIDEO(2),
+      completeVideo: COMPLETE_VIDEO("${rate}"),
       getState: GET_STATE,
       speed: opts.fast ? "auto" : "1",
     });
