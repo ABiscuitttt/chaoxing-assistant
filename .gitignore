@@ -1,6 +1,5 @@
 node_modules/
 downloads/
 *.pdf
+*.png
 .DS_Store
-debug-screenshot.png
-quiz-page.png
