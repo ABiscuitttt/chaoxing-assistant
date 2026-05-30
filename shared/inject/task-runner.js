@@ -16,9 +16,7 @@ export const TASK_RUNNER_TEMPLATE = `
   // ========== 防重复：检查 DOM 中是否已有方框 ==========
   var existingBox = document.getElementById("__cx_runner_box");
   if (existingBox) {
-    // 已有方框，如果 runner 正在运行则忽略
     if (window.__CX_RUNNER && window.__CX_RUNNER.running) return;
-    // 否则移除旧框，重新开始
     existingBox.remove();
   }
 
@@ -37,23 +35,22 @@ export const TASK_RUNNER_TEMPLATE = `
   box.id = "__cx_runner_box";
   box.innerHTML =
     '<div style="font-weight:bold;margin-bottom:4px;color:#1a73e8;">超星助手</div>' +
-    '<div id="__cx_runner_status" style="font-size:11px;color:#333;line-height:1.5;"></div>' +
-    '<div id="__cx_runner_bar" style="margin-top:6px;height:6px;background:#e0e0e0;overflow:hidden;">' +
+    '<div id="__cx_runner_status" style="font-size:11px;color:#333;line-height:1.6;"></div>' +
+    '<div id="__cx_runner_bar" style="margin-top:6px;height:4px;background:#e0e0e0;overflow:hidden;">' +
       '<div id="__cx_runner_fill" style="height:100%;width:0%;background:#1a73e8;transition:width 0.3s;"></div>' +
-    '</div>' +
-    '<div style="margin-top:4px;font-size:10px;color:#999;">可关闭弹窗 · 点击右上角 X 停止</div>';
+    '</div>';
   box.style.cssText =
     "position:fixed;top:10px;left:10px;z-index:99999;" +
     "width:300px;max-height:400px;overflow-y:auto;" +
     "background:#fff;" +
-    "padding:12px 14px;font-family:system-ui,sans-serif;font-size:12px;" +
+    "padding:10px 12px;font-family:system-ui,sans-serif;font-size:12px;" +
     "box-shadow:0 4px 16px rgba(0,0,0,0.15);cursor:default;";
 
   // 关闭按钮
   var closeBtn = document.createElement("span");
-  closeBtn.textContent = "✕";
-  closeBtn.style.cssText = "position:absolute;top:8px;right:10px;cursor:pointer;color:#999;font-size:14px;line-height:1;";
-  closeBtn.title = "停止并关闭";
+  closeBtn.textContent = "x";
+  closeBtn.style.cssText = "position:absolute;top:6px;right:10px;cursor:pointer;color:#aaa;font-size:14px;line-height:1;";
+  closeBtn.title = "停止";
   closeBtn.addEventListener("click", function() {
     if (runner && runner.abort) runner.abort();
     if (box && box.parentNode) box.remove();
@@ -98,11 +95,8 @@ export const TASK_RUNNER_TEMPLATE = `
       this.running = false;
       this.status = "aborted";
       if (this._timerId) { clearInterval(this._timerId); this._timerId = null; }
-      updateStatus("⚠️ 已停止");
+      updateStatus("已停止");
       updateBar(this.progress.overallPct);
-      setTimeout(function() {
-        if (box && box.parentNode) box.style.opacity = "0.5";
-      }, 2000);
     },
 
     start: async function() {
@@ -113,15 +107,15 @@ export const TASK_RUNNER_TEMPLATE = `
 
       try {
         // ---- 1. 探测 ----
-        updateStatus("🔍 探测任务点...");
+        updateStatus("正在探测任务点...");
         var raw = eval(DISCOVER);
         var data = typeof raw === "string" ? JSON.parse(raw) : raw;
-        if (data.error) { updateStatus("❌ " + data.error); this.running = false; return; }
+        if (data.error) { updateStatus("错误: " + data.error); this.running = false; return; }
 
         var pending = data.taskPoints.filter(function(t) { return !t.isFinished; });
         var total = pending.length;
         if (total === 0) {
-          updateStatus("✅ 所有任务点已完成！");
+          updateStatus("所有任务点已完成，无需操作");
           updateBar(100);
           this.running = false;
           this.status = "done";
@@ -146,11 +140,11 @@ export const TASK_RUNNER_TEMPLATE = `
 
         // ---- 2. 文档 ----
         if (docs.length > 0) {
-          progress("📄 处理 " + docs.length + " 个文档...");
+          progress("处理文档: " + docs.length + " 个");
           for (var di = 0; di < docs.length; di++) {
             if (self.aborted) { self.running = false; return; }
             var doc = docs[di];
-            progress("📄 完成: " + (doc.title || doc.filename));
+            progress("文档完成: " + (doc.title || doc.filename));
             eval(COMPLETE_DOC);
             completed++;
             await sleep(600);
@@ -165,7 +159,7 @@ export const TASK_RUNNER_TEMPLATE = `
             self.status = "video";
             self.progress.current = { index: vi, total: videos.length, title: v.title || v.filename, pct: 0 };
 
-            progress("🎬 [" + (vi + 1) + "/" + videos.length + "] 播放: " + (v.title || v.filename) + " (" + v.videoDuration + "s)");
+            progress("视频 [" + (vi + 1) + "/" + videos.length + "] " + (v.title || v.filename) + " (" + v.videoDuration + "s)");
 
             // 启动播放
             try { eval(COMPLETE_VIDEO); } catch(e) {}
@@ -186,12 +180,12 @@ export const TASK_RUNNER_TEMPLATE = `
                   if (state.error) {
                     clearInterval(self._timerId); self._timerId = null;
                     completed++;
-                    progress("🎬 [" + (vi + 1) + "/" + videos.length + "] ⚠️ " + state.error + "，跳过");
+                    progress("视频 [" + (vi + 1) + "/" + videos.length + "] 跳过: " + state.error);
                     resolvePoll();
                     return;
                   }
 
-                  // 被手动暂停 → 自动恢复播放
+                  // 被手动暂停 -> 自动恢复播放
                   if (state.paused) {
                     try { eval(COMPLETE_VIDEO); } catch(e) {}
                   }
@@ -203,14 +197,14 @@ export const TASK_RUNNER_TEMPLATE = `
                   self.progress.current.pct = pct;
 
                   progress(
-                    "🎬 [" + (vi + 1) + "/" + videos.length + "] " + (v.title || v.filename) + "<br>" +
-                    "   进度 " + pct + "%  |  " + state.currentTime + "s/" + (state.duration || "?") + "s  |  " + state.playbackRate + "x  |  " + mins + ":" + (secs < 10 ? "0" : "") + secs
+                    "视频 [" + (vi + 1) + "/" + videos.length + "] " + (v.title || v.filename) + "<br>" +
+                    "进度 " + pct + "%  |  " + state.currentTime + "s/" + (state.duration || "?") + "s  |  " + state.playbackRate + "x  |  " + mins + ":" + (secs < 10 ? "0" : "") + secs
                   );
 
                   if (pct >= THRESHOLD) {
                     clearInterval(self._timerId); self._timerId = null;
                     completed++;
-                    progress("🎬 [" + (vi + 1) + "/" + videos.length + "] ✅ 完成 (" + pct + "%)");
+                    progress("视频 [" + (vi + 1) + "/" + videos.length + "] 完成 (" + pct + "%)");
                     resolvePoll();
                     return;
                   }
@@ -218,7 +212,7 @@ export const TASK_RUNNER_TEMPLATE = `
                   if (elapsed * 1000 > maxWait) {
                     clearInterval(self._timerId); self._timerId = null;
                     completed++;
-                    progress("🎬 [" + (vi + 1) + "/" + videos.length + "] ⚠️ 超时 (" + pct + "%)，跳到下一个");
+                    progress("视频 [" + (vi + 1) + "/" + videos.length + "] 超时 (" + pct + "%)，跳过");
                     resolvePoll();
                     return;
                   }
@@ -235,12 +229,12 @@ export const TASK_RUNNER_TEMPLATE = `
         // ---- 4. 其他 ----
         for (var oi = 0; oi < others.length; oi++) {
           if (self.aborted) { self.running = false; return; }
-          progress("📦 跳过未知类型: " + others[oi].type);
+          progress("跳过未知类型: " + others[oi].type);
           completed++;
         }
 
         // ---- 5. 验证 ----
-        updateStatus("🔍 验证完成状态...");
+        updateStatus("正在验证...");
         await sleep(1000);
         try {
           var raw2 = eval(DISCOVER);
@@ -249,21 +243,21 @@ export const TASK_RUNNER_TEMPLATE = `
             var done = data2.taskPoints.filter(function(t) { return t.isFinished; }).length;
             var tot = data2.taskPoints.length;
             updateBar(100);
-            updateStatus("✅ 全部完成！" + done + "/" + tot + " 已确认");
+            updateStatus("全部完成 " + done + "/" + tot);
           } else {
             updateBar(100);
-            updateStatus("✅ 处理完毕（请手动验证）");
+            updateStatus("处理完毕");
           }
         } catch(e) {
           updateBar(100);
-          updateStatus("✅ 处理完毕");
+          updateStatus("处理完毕");
         }
 
         self.running = false;
         self.status = "done";
 
       } catch (e) {
-        updateStatus("❌ 异常: " + e.message);
+        updateStatus("异常: " + e.message);
         this.running = false;
         this.status = "error";
       }
@@ -278,25 +272,23 @@ export const TASK_RUNNER_TEMPLATE = `
   window.__CX_SHOW = function(html, isError) {
     var b = document.getElementById("__cx_runner_box");
     if (!b) {
-      // 创建一个简单通知框
       b = document.createElement("div");
       b.id = "__cx_runner_box";
       b.style.cssText =
         "position:fixed;top:10px;left:10px;z-index:99999;" +
         "max-width:340px;max-height:400px;overflow-y:auto;" +
         "background:#fff;" +
-        "padding:12px 14px;font-family:system-ui,sans-serif;font-size:12px;" +
+        "padding:10px 12px;font-family:system-ui,sans-serif;font-size:12px;" +
         "box-shadow:0 4px 16px rgba(0,0,0,0.15);";
       document.body.appendChild(b);
     }
     var color = isError ? "#d93025" : "#333";
     b.innerHTML =
       '<div style="font-weight:bold;margin-bottom:6px;color:#1a73e8;">超星助手</div>' +
-      '<div style="font-size:11px;color:' + color + ';line-height:1.5;white-space:pre-wrap;word-break:break-all;">' + html + '</div>' +
-      '<div style="margin-top:6px;font-size:10px;color:#999;">点击右上角 X 关闭</div>';
+      '<div style="font-size:11px;color:' + color + ';line-height:1.6;white-space:pre-wrap;word-break:break-all;">' + html + '</div>';
     var cb = document.createElement("span");
-    cb.textContent = "✕";
-    cb.style.cssText = "position:absolute;top:8px;right:10px;cursor:pointer;color:#999;font-size:14px;line-height:1;";
+    cb.textContent = "x";
+    cb.style.cssText = "position:absolute;top:6px;right:10px;cursor:pointer;color:#aaa;font-size:14px;line-height:1;";
     cb.onclick = function() { b.remove(); };
     b.appendChild(cb);
   };
