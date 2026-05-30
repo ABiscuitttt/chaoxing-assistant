@@ -10,6 +10,7 @@ import { buildRunner } from "./shared/inject/task-runner.js";
 import { DISCOVER_SCRIPT } from "./shared/inject/discover.js";
 import { COMPLETE_DOCUMENT, COMPLETE_VIDEO } from "./shared/inject/task-complete.js";
 import { GET_STATE } from "./shared/inject/video-control.js";
+import { CHAPTERS_SCRIPT, GOTO_CHAPTER } from "./shared/inject/chapters.js";
 
 const VERSION = "1.0.0";
 const program = new Command();
@@ -99,6 +100,77 @@ program
     console.log("✅ 运行器已注入，查看页面左上角面板");
     console.log("   CLI 可以退出，运行器在页面内独立工作");
     console.log(`   初始状态: ${result}`);
+  });
+
+program
+  .command("run")
+  .description("遍历完成整个课程所有未完成章节")
+  .option("--fast", "自动使用视频支持的最大倍速")
+  .action(async (opts) => {
+    const ok = await healthCheck();
+    if (!ok) { console.error("❌ WebBridge daemon 未连接"); process.exit(1); }
+
+    // 1. 获取全部章节
+    console.log("📖 获取章节列表...");
+    const chRaw = await evaluate(CHAPTERS_SCRIPT);
+    const chData = JSON.parse(chRaw);
+    if (chData.error) { console.error("❌", chData.error); return; }
+
+    const pending = chData.chapters.filter(c => c.isLeaf && c.unfinished > 0);
+    if (pending.length === 0) { console.log("✅ 全部章节已完成！"); return; }
+
+    // 按编号排序
+    pending.sort((a, b) => {
+      const an = a.number.split(".").map(Number);
+      const bn = b.number.split(".").map(Number);
+      for (let i = 0; i < Math.max(an.length, bn.length); i++) {
+        if ((an[i] || 0) !== (bn[i] || 0)) return (an[i] || 0) - (bn[i] || 0);
+      }
+      return 0;
+    });
+
+    console.log(`📋 共 ${pending.length} 个未完成章节\n`);
+
+    const speed = opts.fast ? "auto" : "1";
+    const runnerCode = buildRunner({
+      discover: DISCOVER_SCRIPT,
+      completeDoc: COMPLETE_DOCUMENT,
+      completeVideo: COMPLETE_VIDEO("${rate}"),
+      getState: GET_STATE,
+      speed,
+    });
+
+    for (let i = 0; i < pending.length; i++) {
+      const ch = pending[i];
+      console.log(`\n📖 [${i + 1}/${pending.length}] ${ch.number} ${ch.title}`);
+
+      // 2. 跳转
+      console.log(`   → 跳转...`);
+      const gotoCode = GOTO_CHAPTER(ch.id);
+      await evaluate(gotoCode);
+      await new Promise(r => setTimeout(r, 5000));
+
+      // 3. 注入 runner
+      console.log(`   → 启动自动完成...`);
+      await evaluate(runnerCode);
+
+      // 4. 等待完成
+      while (true) {
+        await new Promise(r => setTimeout(r, 3000));
+        try {
+          const statusRaw = await evaluate("(function(){var r=window.__CX_RUNNER;return r?JSON.stringify({running:r.running,status:r.status}):'null';})()");
+          if (statusRaw === "null") break;
+          const st = JSON.parse(statusRaw);
+          if (!st.running) {
+            console.log(`   ✅ 完成 (${st.status})`);
+            break;
+          }
+          process.stdout.write(`   ⏳ ${st.status}...\r`);
+        } catch { break; }
+      }
+    }
+
+    console.log("\n🎉 全部章节处理完毕！");
   });
 
 program.parse();
