@@ -191,6 +191,11 @@ export const TASK_RUNNER_TEMPLATE = `
                     return;
                   }
 
+                  // 被手动暂停 → 自动恢复播放
+                  if (state.paused) {
+                    try { eval(COMPLETE_VIDEO); } catch(e) {}
+                  }
+
                   var pct = parseFloat(state.progressPct) || 0;
                   var elapsed = Math.round((Date.now() - startTime) / 1000);
                   var mins = Math.floor(elapsed / 60);
