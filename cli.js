@@ -5,7 +5,11 @@ import { discover } from "./lib/commands/discover.js";
 import { chapters } from "./lib/commands/chapters.js";
 import { complete } from "./lib/commands/complete.js";
 import { download } from "./lib/commands/download.js";
-import { requireHealth, evaluate } from "./lib/bridge.js";
+import { readFileSync } from "fs";
+import { resolve, dirname } from "path";
+import { fileURLToPath } from "url";
+const __dirname = dirname(fileURLToPath(import.meta.url));
+import { requireHealth, evaluate, navigate, call } from "./lib/bridge.js";
 import { buildRunner } from "./shared/inject/task-runner.js";
 import { DISCOVER_SCRIPT } from "./shared/inject/discover.js";
 import { COMPLETE_DOCUMENT, COMPLETE_VIDEO } from "./shared/inject/task-complete.js";
@@ -168,6 +172,36 @@ program
     }
 
     console.log("\n🎉 全部章节处理完毕！");
+  });
+
+program
+  .command("login")
+  .description("自动登录超星（浏览器端AJAX，cookie原生注入）")
+  .action(async () => {
+    let user, passwd;
+    try {
+      const envContent = readFileSync(resolve(__dirname, ".env.passwd"), "utf-8");
+      user = envContent.match(/USER=(\S+)/)?.[1];
+      passwd = envContent.match(/PASSWD=(\S+)/)?.[1];
+    } catch { console.error("❌ 无法读取 .env.passwd"); process.exit(1); }
+    if (!user || !passwd) { console.error("❌ .env.passwd 格式错误"); process.exit(1); }
+
+    console.log("→ 打开登录页并执行登录...");
+    await navigate("https://passport2.chaoxing.com/login?newversion=true&refer=https://i.chaoxing.com", true);
+    await new Promise(r => setTimeout(r, 3000));
+
+    // 在浏览器中用 CryptoJS 加密 + $.ajax 提交，cookie 原生注入
+    await evaluate(`(()=>{
+      var key="u2oh6Vu^HWe4_AES",ak=CryptoJS.enc.Utf8.parse(key),opt={iv:ak,mode:CryptoJS.mode.CBC,padding:CryptoJS.pad.Pkcs7};
+      var enc=function(t){return CryptoJS.enc.Base64.stringify(CryptoJS.AES.encrypt(CryptoJS.enc.Utf8.parse(t),ak,opt).ciphertext);};
+      $.ajax({url:"/fanyalogin",type:"post",dataType:"json",
+        data:{fid:"-1",uname:enc(${JSON.stringify(user)}),password:enc(${JSON.stringify(passwd)}),refer:"https://i.chaoxing.com",t:"true",forbidotherlogin:"0",validate:"",doubleFactorLogin:"0",independentId:"0",independentNameId:"0"},
+        success:function(d){if(d.status)window.location=d.url}});
+    })()`);
+    await new Promise(r => setTimeout(r, 5000));
+
+    const title = await evaluate("document.title");
+    console.log(title === "用户登录" ? "❌ 登录失败，可能需要验证码" : `✅ 登录成功: ${title}`);
   });
 
 program.parse();
