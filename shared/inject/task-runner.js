@@ -142,7 +142,7 @@ export const TASK_RUNNER_TEMPLATE = `
 
           // 倍速：auto 模式每个视频用各自最大，否则固定
           var vSpeed = SPEED_MODE === "auto" ? (v.canDoubleSpeed ? 2 : 1) : (parseFloat(SPEED_MODE) || 1);
-          var vScript = COMPLETE_VIDEO.replace("${rate}", vSpeed);
+          var vScript = COMPLETE_VIDEO.replace("\${rate}", vSpeed);
 
           progress("视频 " + (vi + 1) + "/" + videos.length + "  " + vSpeed + "x",
                    (v.title || v.filename) + " (" + v.videoDuration + "s)");
