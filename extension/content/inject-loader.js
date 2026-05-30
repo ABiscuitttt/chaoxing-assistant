@@ -11,6 +11,16 @@
  * 构建: 运行 node scripts/build-extension.js 生成 inject-scripts.js
  */
 
+// ========== 加载提示 ==========
+(function() {
+  var tip = document.createElement("div");
+  tip.textContent = "超星助手已加载";
+  tip.style.cssText = "position:fixed;top:10px;left:10px;z-index:99998;background:#1a73e8;color:#fff;padding:4px 10px;border-radius:4px;font-size:12px;font-family:system-ui;opacity:0;transition:opacity 0.3s;pointer-events:none;";
+  document.body.appendChild(tip);
+  requestAnimationFrame(function() { tip.style.opacity = "1"; });
+  setTimeout(function() { tip.style.opacity = "0"; setTimeout(function() { tip.remove(); }, 300); }, 2000);
+})();
+
 // ========== 注入工具 ==========
 
 function injectRaw(code) {
