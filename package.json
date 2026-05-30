@@ -1,6 +1,6 @@
 {
   "name": "chaoxing-assistant",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "超星学习通任务点助手 — CLI + 浏览器插件",
   "type": "module",
   "bin": {
@@ -11,12 +11,26 @@
     "discover": "node cli.js discover",
     "chapters": "node cli.js chapters",
     "complete": "node cli.js complete",
-    "download": "node cli.js download"
+    "download": "node cli.js download",
+    "version:check": "node scripts/version.js --check",
+    "version:sync": "node scripts/version.js --sync",
+    "version:patch": "node scripts/version.js patch",
+    "version:minor": "node scripts/version.js minor",
+    "version:major": "node scripts/version.js major",
+    "release": "node scripts/release.js",
+    "release:patch": "node scripts/release.js patch",
+    "release:minor": "node scripts/release.js minor",
+    "release:major": "node scripts/release.js major"
   },
   "engines": {
     "node": ">=18"
   },
-  "keywords": ["chaoxing", "xuexitong", "mooc", "automation"],
+  "keywords": [
+    "chaoxing",
+    "xuexitong",
+    "mooc",
+    "automation"
+  ],
   "author": "chaoxing-assistant contributors",
   "license": "Apache-2.0",
   "dependencies": {

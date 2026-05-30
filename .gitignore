@@ -4,3 +4,4 @@ downloads/
 *.png
 .env.passwd
 .DS_Store
+release/

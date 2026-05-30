@@ -16,7 +16,7 @@ import { COMPLETE_DOCUMENT, COMPLETE_VIDEO } from "./shared/inject/task-complete
 import { GET_STATE } from "./shared/inject/video-control.js";
 import { CHAPTERS_SCRIPT, GOTO_CHAPTER } from "./shared/inject/chapters.js";
 
-const VERSION = "1.0.0";
+const VERSION = JSON.parse(readFileSync(resolve(__dirname, "package.json"), "utf-8")).version;
 const program = new Command();
 
 program
